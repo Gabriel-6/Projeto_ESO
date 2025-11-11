@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  senha     String
+  creditos  Int      @default(10000)
+  createdAt DateTime @default(now())
+
+  itens   Item[]
+  bundles Bundle[]
+  historico HistoricoTransacao[]
+}
+
+model Item {
+  id            Int      @id @default(autoincrement())
+  itemId        String   
+  nome          String
+  descricao     String?
+  tipo          String?
+  raridade      String?
+  imagemIcon    String?
+  imagemPequena String?
+  preco         Float?
+  ativo         Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  usuarioId Int
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  bundleId Int?
+  bundle   Bundle? @relation(fields: [bundleId], references: [id])
+  historico HistoricoTransacao[]
+
+  @@unique([usuarioId, itemId])
+}
+
+model Bundle {
+  id            Int      @id @default(autoincrement())
+  bundleId      String   
+  nome          String
+  descricao     String?
+  imagemIcon    String?
+  precoOriginal Float?
+  precoFinal    Float?
+  desconto      Boolean  @default(false)
+  ativo         Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  usuarioId Int
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  itens Item[]
+  historico HistoricoTransacao[]
+
+  @@unique([usuarioId, bundleId])
+}
+
+model HistoricoTransacao {
+  id          Int           @id @default(autoincrement())
+  tipo        TipoTransacao
+  itemId      Int?
+  bundleId    Int?
+  valor       Float
+  data        DateTime      @default(now())
+
+  usuarioId   Int
+  usuario     Usuario       @relation(fields: [usuarioId], references: [id])
+
+  item        Item?         @relation(fields: [itemId], references: [id])
+  bundle      Bundle?       @relation(fields: [bundleId], references: [id])
+}
+
+enum TipoTransacao {
+  COMPRA
+  DEVOLUCAO
+}
