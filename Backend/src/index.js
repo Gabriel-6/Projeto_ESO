@@ -89,10 +89,25 @@ app.post('/itens', middleware, async (req, res) => {
                 }
             })
 
+            if (usuario.creditos < item.finalPrice) return res.status(409).json({ error: 'Não possui VBucks suficientes' })
+
             if (bundleExists) {
                 if (bundleExists.ativo) {
-                    return res.status(409).json({ error: 'Você já possui esse item.' })
+                    return res.status(409).json({ error: 'Você já possui esse pacote.' })
                 } else {
+                    for (const it of item.includedItems) {
+                        const existingItem = await prisma.item.findFirst({
+                            where: {
+                                itemId: it.id,
+                                usuarioId: userId,
+                                ativo: true
+                            }
+                        })
+                        if (existingItem) {
+                            return res.status(409).json({ error: `Você já possui o item "${existingItem.nome}" deste pacote. Reembolse-o antes de comprar o pacote.` })
+                        }
+                    }
+
                     const bundle = await prisma.bundle.update({
                         where: { usuarioId_bundleId: { usuarioId: userId, bundleId: item.id } },
                         data: { ativo: true }
@@ -102,6 +117,35 @@ app.post('/itens', middleware, async (req, res) => {
                         where: { id: userId },
                         data: { creditos: { decrement: item.finalPrice } }
                     })
+
+                    for (const it of item.includedItems) {
+                        const existingItem = await prisma.item.findFirst({
+                            where: { itemId: it.id, usuarioId: userId }
+                        })
+
+                        if (existingItem) {
+                            await prisma.item.update({
+                                where: { usuarioId_itemId: { usuarioId: userId, itemId: it.id } },
+                                data: { bundleId: bundle.id, ativo: true }
+                            })
+                        } else {
+                            await prisma.item.create({
+                                data: {
+                                    itemId: it.id,
+                                    nome: it.name,
+                                    descricao: it.description ?? null,
+                                    tipo: it.type?.displayValue ?? null,
+                                    raridade: it.rarity?.value ?? null,
+                                    imagemIcon: it.images?.icon ?? null,
+                                    imagemPequena: it.images?.smallIcon ?? null,
+                                    preco: 0,
+                                    ativo: true,
+                                    usuario: { connect: { id: userId } },
+                                    bundle: { connect: { id: bundle.id } }
+                                }
+                            })
+                        }
+                    }
 
                     await prisma.historicoTransacao.create({
                         data: {
@@ -114,8 +158,6 @@ app.post('/itens', middleware, async (req, res) => {
                     return res.status(200).json({ message: 'Pacote comprado com sucesso' })
                 }
             }
-
-            if (usuario.creditos < item.finalPrice) return res.status(409).json({ error: 'Não possui VBucks suficientes' })
 
             const novoBundle = await prisma.$transaction(async (tx) => {
                 await tx.usuario.update({
@@ -191,6 +233,8 @@ app.post('/itens', middleware, async (req, res) => {
                 }
             })
 
+            if (usuario.creditos < item.finalPrice) return res.status(409).json({ error: 'Não possui VBucks suficientes' })
+
             if (itemExists) {
                 if (itemExists.ativo) {
                     return res.status(409).json({ error: 'Você já possui esse item.' })
@@ -199,7 +243,8 @@ app.post('/itens', middleware, async (req, res) => {
                         where: { usuarioId_itemId: { usuarioId: userId, itemId: item.id } },
                         data: {
                             ativo: true,
-                            preco: item.finalPrice ?? 0
+                            preco: item.finalPrice ?? 0,
+                            bundleId: null,
                         }
                     })
 
@@ -221,8 +266,6 @@ app.post('/itens', middleware, async (req, res) => {
                 }
             }
 
-            if (usuario.creditos < item.finalPrice) return res.status(409).json({ error: 'Não possui VBucks suficientes' })
-
             const novoItem = await prisma.$transaction(async (tx) => {
                 await tx.usuario.update({
                     where: { id: userId },
@@ -241,7 +284,7 @@ app.post('/itens', middleware, async (req, res) => {
                         preco: item.finalPrice ?? 0,
                         usuario: {
                             connect: { id: userId }
-                        }
+                        },
                     }
                 })
 
