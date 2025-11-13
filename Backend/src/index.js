@@ -200,7 +200,10 @@ app.post('/itens', middleware, async (req, res) => {
                         if (!itemExists.ativo) {
                             await tx.item.update({
                                 where: { usuarioId_itemId: { usuarioId: userId, itemId: it.id } },
-                                data: { ativo: true }
+                                data: {
+                                    ativo: true,
+                                    bundleId: novoBundle.id
+                                }
                             })
                         }
                     } else {
