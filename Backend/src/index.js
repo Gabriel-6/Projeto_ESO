@@ -159,6 +159,19 @@ app.post('/itens', middleware, async (req, res) => {
                 }
             }
 
+            for (const it of item.includedItems) {
+                const existingItem = await prisma.item.findFirst({
+                    where: {
+                        itemId: it.id,
+                        usuarioId: userId,
+                        ativo: true
+                    }
+                })
+                if (existingItem) {
+                    return res.status(409).json({ error: `Você já possui o item "${existingItem.nome}" deste pacote. Reembolse-o antes de comprar o pacote.` })
+                }
+            }
+
             const novoBundle = await prisma.$transaction(async (tx) => {
                 await tx.usuario.update({
                     where: { id: userId },
