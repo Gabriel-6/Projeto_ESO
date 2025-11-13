@@ -3,11 +3,12 @@ import { FaRegUser, FaSignInAlt, FaSignOutAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext';
 import { showSucessMessage } from '../utils/Notifications';
-import { MdInventory2 } from 'react-icons/md';
+import { MdInventory2, MdOutlineMenu } from 'react-icons/md';
 
 
 const Header = () => {
     const [open, setOpen] = useState(false)
+    const [openMenu, setOpenMenu] = useState(false)
     const navigate = useNavigate()
 
     const { logout, isLogged } = useAuth()
@@ -27,6 +28,9 @@ const Header = () => {
                     </div>
                     <div className='relative items-center space-x-4'>
                         <div className='flex items-center'>
+                            <div className='md:hidden'>
+                                <MdOutlineMenu className='h-8 w-8' onClick={() => (setOpenMenu(!openMenu))} />
+                            </div>
 
                             {isLogged && (
                                 <div className='flex items-center mr-3'>
@@ -82,6 +86,14 @@ const Header = () => {
                     </div>
                 </div>
             </div>
+            {openMenu && (
+                <div className='md:hidden flex flex-col space-y-3 px-4 py-4 bg-white transition-all duration-300 ease-in-out overflow-hidden text-gray-800'>
+                    <a href='/' className='font-medium'>Items</a>
+                    <a href='/inventory/me' className='font-medium'>Inventario</a>
+                    <a href='/users' className='font-medium' >Usuarios</a>
+                </div>
+            )}
+
         </header>
     )
 }
