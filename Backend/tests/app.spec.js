@@ -61,6 +61,29 @@ await test('POST /itens - Comprar um pacote', async () => {
 
 await delay(500)
 
+await test('POST /itens - Impedir compra de item duplicado', async () => {
+    const response = await request(app)
+        .post('/itens')
+        .set({ 'Authorization': `Bearer ${token}` })
+        .send(itemData)
+    
+    console.log(response.body)
+    assert.deepStrictEqual(response.body.error, 'Você já possui esse item.')
+})
+
+await delay(500)
+
+await test('POST /itens - Impedir compra de pacote duplicado', async () => {
+    const response = await request(app)
+        .post('/itens')
+        .set({ 'Authorization': `Bearer ${token}` })
+        .send(bundleData)
+
+    assert.deepStrictEqual(response.body.error, 'Você já possui esse pacote.')
+})
+
+await delay(500)
+
 await test('DELETE /itens - Reembolsar um item', async () => {
     const response = await request(app)
         .delete('/itens')
